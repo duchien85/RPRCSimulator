@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
@@ -32,7 +33,7 @@ public class Simulator extends ApplicationAdapter
     public static final float DRAW_WIDTH = 12.444f;
     public static final float PROPELLER_HEIGHT = 1.5f;
 
-    Texture propellerTexture;
+    static Texture propellerTexture;
     OrthographicCamera cam;
     SpriteBatch batch;
     ShapeRenderer shapeRenderer;
@@ -73,11 +74,14 @@ public class Simulator extends ApplicationAdapter
         shapeRenderer.setColor(Color.GRAY);
         shapeRenderer.rect(cam.position.x - cam.viewportWidth / 2, cam.position.y - cam.viewportHeight / 2, cam.viewportWidth, cam.viewportHeight);
         shapeRenderer.end();*/
+        world.step(1/60f, 6, 2);
 
         batch.setProjectionMatrix(cam.combined);
         batch.begin();
 
-        draw(batch, propellerTexture, Propeller.getProp1(cam, world).x, Propeller.getProp1(cam, world).y, PROPELLER_HEIGHT);
+        Propeller.getProp1(cam, world).sprite.setRotation((float) Math.toDegrees(Propeller.getProp1(cam, world).body.getAngle()));
+        Propeller.getProp1(cam, world).sprite.draw(batch);
+        //draw(batch, propellerTexture, Propeller.getProp1(cam, world).x, Propeller.getProp1(cam, world).y, PROPELLER_HEIGHT);
         //draw(batch, propellerTexture, cam.viewportWidth / 2 - 3, cam.viewportHeight / 2 - 1 - PROPELLER_HEIGHT, PROPELLER_HEIGHT);
         //draw(batch, propellerTexture, cam.viewportWidth / 2 + 3 - PROPELLER_HEIGHT, cam.viewportHeight / 2 + 1, PROPELLER_HEIGHT);
         //draw(batch, propellerTexture, cam.viewportWidth / 2 + 3 - PROPELLER_HEIGHT, cam.viewportHeight / 2 - 1 - PROPELLER_HEIGHT, PROPELLER_HEIGHT);
@@ -86,7 +90,6 @@ public class Simulator extends ApplicationAdapter
 
         batch.end();
         debugRenderer.render(world, cam.combined);
-        world.step(1/60f, 6, 2);
     }
 
     @Override
@@ -105,6 +108,7 @@ public class Simulator extends ApplicationAdapter
         propellerTexture.dispose();
         shapeRenderer.dispose();
         batch.dispose();
+        propellerTexture = null;
     }
 
     public static void draw(SpriteBatch batch, Texture texture, float x, float y, float height)
@@ -130,6 +134,10 @@ public class Simulator extends ApplicationAdapter
             this.x = x;
             this.y = y;
             updateBody(world);
+            sprite = new Sprite(propellerTexture);
+            sprite.setSize(PROPELLER_HEIGHT, PROPELLER_HEIGHT * sprite.getHeight() / sprite.getWidth());
+            sprite.setOrigin(sprite.getWidth()/2, sprite.getHeight()/2);
+            sprite.setPosition(x, y);
         }
 
         public void updateBody(World world)
@@ -160,7 +168,7 @@ public class Simulator extends ApplicationAdapter
                 revoluteJointDef.initialize(anchor, body, anchor.getWorldCenter());
                 revoluteJointDef.enableMotor = true;
                 revoluteJointDef.motorSpeed = 10;
-                revoluteJointDef.maxMotorTorque = 200;
+                revoluteJointDef.maxMotorTorque = 100;
                 world.createJoint(revoluteJointDef);
                 shape.dispose();
                 this.body = body;
