@@ -24,6 +24,7 @@ import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.badlogic.gdx.physics.box2d.joints.*;
 
 public class Simulator extends ApplicationAdapter
 {
@@ -32,6 +33,9 @@ public class Simulator extends ApplicationAdapter
     public static float ASPECT_RATIO;
     public static final float DRAW_WIDTH = 12.444f;
     public static final float PROPELLER_HEIGHT = 1.5f;
+	public static final float MAX_PROPELLER_SPEED = 4712.387f;//rad/s, 45000 rpm
+	public static final float MIN_PROPELLER_SPEED = 104.7197f;//rad/s, 1000 rpm, this is a guess
+	public static final float PROPELLER_TORQUE = 1000f;
 
     static Texture propellerTexture;
     OrthographicCamera cam;
@@ -55,6 +59,8 @@ public class Simulator extends ApplicationAdapter
 
         world = new World(new Vector2(0, 0), true);
         debugRenderer = new Box2DDebugRenderer();
+		
+		//Propeller.getProp1(cam, world).joint.setMotorSpeed(10);
     }
 
     private void initCamera()
@@ -80,14 +86,15 @@ public class Simulator extends ApplicationAdapter
         batch.begin();
 
         Propeller.getProp1(cam, world).sprite.setRotation((float) Math.toDegrees(Propeller.getProp1(cam, world).body.getAngle()));
-        Propeller.getProp1(cam, world).sprite.draw(batch);
-        //draw(batch, propellerTexture, Propeller.getProp1(cam, world).x, Propeller.getProp1(cam, world).y, PROPELLER_HEIGHT);
-        //draw(batch, propellerTexture, cam.viewportWidth / 2 - 3, cam.viewportHeight / 2 - 1 - PROPELLER_HEIGHT, PROPELLER_HEIGHT);
-        //draw(batch, propellerTexture, cam.viewportWidth / 2 + 3 - PROPELLER_HEIGHT, cam.viewportHeight / 2 + 1, PROPELLER_HEIGHT);
-        //draw(batch, propellerTexture, cam.viewportWidth / 2 + 3 - PROPELLER_HEIGHT, cam.viewportHeight / 2 - 1 - PROPELLER_HEIGHT, PROPELLER_HEIGHT);
-        //Propeller.getProp1(cam, world).body.applyTorque(10000, true);
-        //sprite.setRotation((float)Math.toDegrees(body.getAngle()));
-
+        Propeller.getProp2(cam, world).sprite.setRotation((float) Math.toDegrees(Propeller.getProp2(cam, world).body.getAngle()));
+        Propeller.getProp3(cam, world).sprite.setRotation((float) Math.toDegrees(Propeller.getProp2(cam, world).body.getAngle()));
+        Propeller.getProp4(cam, world).sprite.setRotation((float) Math.toDegrees(Propeller.getProp3(cam, world).body.getAngle()));
+        
+		Propeller.getProp1(cam, world).sprite.draw(batch);
+        Propeller.getProp2(cam, world).sprite.draw(batch);
+        Propeller.getProp3(cam, world).sprite.draw(batch);
+        Propeller.getProp4(cam, world).sprite.draw(batch);
+        
         batch.end();
         debugRenderer.render(world, cam.combined);
     }
@@ -127,6 +134,7 @@ public class Simulator extends ApplicationAdapter
 
         float x, y;
         Body body;
+		RevoluteJoint joint;
         Sprite sprite;
 
         public Propeller(float x, float y, World world)
@@ -167,9 +175,9 @@ public class Simulator extends ApplicationAdapter
                 RevoluteJointDef revoluteJointDef = new RevoluteJointDef();
                 revoluteJointDef.initialize(anchor, body, anchor.getWorldCenter());
                 revoluteJointDef.enableMotor = true;
-                revoluteJointDef.motorSpeed = 10;
-                revoluteJointDef.maxMotorTorque = 100;
-                world.createJoint(revoluteJointDef);
+                revoluteJointDef.motorSpeed = 0;//motor is off initially
+                revoluteJointDef.maxMotorTorque = PROPELLER_TORQUE;
+                joint = (RevoluteJoint) world.createJoint(revoluteJointDef);
                 shape.dispose();
                 this.body = body;
             }
@@ -213,7 +221,7 @@ public class Simulator extends ApplicationAdapter
             return prop1;
         }
 
-        public static Propeller generateProp2(OrthographicCamera cam, World world)
+        public static Propeller getProp2(OrthographicCamera cam, World world)
         {
             if(prop2 == null)
             {
@@ -228,7 +236,7 @@ public class Simulator extends ApplicationAdapter
             return prop2;
         }
 
-        public static Propeller generateProp3(OrthographicCamera cam, World world)
+        public static Propeller getProp3(OrthographicCamera cam, World world)
         {
             if(prop3 == null)
             {
@@ -243,7 +251,7 @@ public class Simulator extends ApplicationAdapter
             return prop3;
         }
 
-        public static Propeller generateProp4(OrthographicCamera cam, World world)
+        public static Propeller getProp4(OrthographicCamera cam, World world)
         {
             if(prop4 == null)
             {
