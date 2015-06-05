@@ -1,30 +1,16 @@
 package com.androidforever.rprcsimulator;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
-import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.Fixture;
-import com.badlogic.gdx.physics.box2d.FixtureDef;
-import com.badlogic.gdx.physics.box2d.PolygonShape;
-import com.badlogic.gdx.physics.box2d.World;
-import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
-
-import java.util.ArrayList;
-import java.util.List;
+import android.widget.*;
+import com.androidforever.rprccommon.lib.*;
+import com.badlogic.gdx.*;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.graphics.glutils.*;
+import com.badlogic.gdx.math.*;
+import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.joints.*;
+import com.esotericsoftware.kryonet.*;
+import java.io.*;
 
 public class Simulator extends ApplicationAdapter
 {
@@ -60,7 +46,48 @@ public class Simulator extends ApplicationAdapter
         world = new World(new Vector2(0, 0), true);
         debugRenderer = new Box2DDebugRenderer();
 		
-		//Propeller.getProp1(cam, world).joint.setMotorSpeed(10);
+		final Server server = KryoNet.createServer();
+		server.start();
+		new Thread(new Runnable(){
+
+				@Override
+				public void run()
+				{
+					try
+					{
+						server.bind(KryoNet.TCP_PORT, KryoNet.UDP_PORT);
+						server.addListener(new Listener()
+							{
+								@Override
+								public void received(Connection con, Object obj)
+								{
+									if(obj instanceof Status)
+									{
+										Status status = (Status)obj;
+										if(status.request)
+										{
+											con.sendTCP(new Status(status.id, false, Propeller.getProp1(cam, world).joint.getMotorSpeed() > 0));
+										}
+										else
+										{
+											boolean power = status.power;
+											setSpeedAll(power ? MIN_PROPELLER_SPEED : 0);
+											con.sendTCP(new Status(status.id, false, true));
+										}
+									}
+								}
+							});
+					}
+					catch (IOException e)
+					{
+						//todo binding server failed
+						e.printStackTrace();
+					}
+				}
+				
+			
+		}).start();
+		
     }
 
     private void initCamera()
@@ -127,6 +154,14 @@ public class Simulator extends ApplicationAdapter
     {
         batch.draw(region, x, y, height * region.getRegionWidth()/region.getRegionHeight(), height);
     }
+	
+	public void setSpeedAll(float speed)
+	{
+		Propeller.getProp1(cam, world).joint.setMotorSpeed(speed);
+		Propeller.getProp2(cam, world).joint.setMotorSpeed(speed);
+		Propeller.getProp3(cam, world).joint.setMotorSpeed(speed);
+		Propeller.getProp4(cam, world).joint.setMotorSpeed(speed);
+	}
 
     private static class Propeller
     {
