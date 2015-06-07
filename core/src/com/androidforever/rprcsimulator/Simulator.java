@@ -155,7 +155,6 @@ public class Simulator extends ApplicationAdapter
                                     setSpeedAll(currentAcPower);
                                     return;
                                 }
-
                                 float prop1Speed = currentAcPower;//top left
                                 float prop2Speed = currentAcPower;//bottom left
                                 float prop3Speed = currentAcPower;//top right
